@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>活動報到小幫手</title>
+<script src="config.js"></script>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#F6F4EF; --card:#FFFFFF; --ink:#1E2723; --sub:#6B736F; --line:#E6E2D9;
+    --pri:#2E5E4E; --pri-soft:#E3EDE8; --gold:#B8862F; --gold-soft:#F5ECDA; --red:#B4483C;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.5}
+  .wrap{max-width:520px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 18px}
+  .brand small{display:block;font-size:11px;letter-spacing:.18em;color:var(--sub);text-transform:uppercase}
+  .brand b{font-size:21px;letter-spacing:.04em}
+  .me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+  .me img{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--line)}
+  .badge{font-size:10px;background:var(--gold-soft);color:var(--gold);padding:1px 6px;border-radius:99px;margin-left:2px}
+  .sec{display:flex;align-items:baseline;justify-content:space-between;margin:22px 2px 10px}
+  .sec h2{font-size:13px;letter-spacing:.12em;color:var(--sub);margin:0;font-weight:600}
+  .card{background:var(--card);border-radius:var(--r);padding:16px;border:1px solid var(--line);margin-bottom:12px}
+  .ev{display:flex;gap:14px;align-items:center;cursor:pointer}
+  .date{flex:0 0 56px;text-align:center;border-radius:12px;background:var(--pri-soft);color:var(--pri);padding:8px 0}
+  .date .d{font-size:22px;font-weight:700;line-height:1.1}
+  .date .w{font-size:11px}
+  .ev .t{font-weight:600;font-size:16px}
+  .ev .m{font-size:13px;color:var(--sub)}
+  .ev .c{font-size:12px;color:var(--sub);margin-top:4px}
+  .chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--pri-soft);color:var(--pri);margin-left:6px;vertical-align:1px}
+  .chip.gold{background:var(--gold-soft);color:var(--gold)}
+  .chip.gray{background:#EEE;color:#777}
+  button{font:inherit;border:0;border-radius:12px;padding:14px 16px;width:100%;cursor:pointer;font-weight:600}
+  .btn{background:var(--pri);color:#fff}
+  .btn.gold{background:var(--gold)}
+  .btn.ghost{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
+  .btn.quiet{background:transparent;color:var(--sub);font-weight:500;padding:10px}
+  .btn:disabled{opacity:.5}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .back{background:none;color:var(--sub);width:auto;padding:4px 0;font-weight:500;margin-bottom:8px}
+  h1{font-size:23px;margin:0 0 6px;line-height:1.35}
+  .meta{color:var(--sub);font-size:14px}
+  .meta div{margin:2px 0}
+  .note{white-space:pre-wrap;font-size:14px;margin-top:10px;color:#3A443F}
+  .stats{display:flex;gap:10px;margin:14px 0}
+  .stat{flex:1;background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:22px}
+  .stat span{font-size:12px;color:var(--sub)}
+  .people{display:flex;flex-wrap:wrap;gap:8px}
+  .p{font-size:14px;padding:6px 12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;gap:6px}
+  .p.in{background:var(--gold-soft);border-color:transparent}
+  .p .x{color:var(--red);font-size:13px;cursor:pointer;padding-left:2px}
+  .p .tag{font-size:11px;color:var(--sub)}
+  .empty{color:var(--sub);font-size:14px;text-align:center;padding:24px 0}
+  label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
+  input,textarea{font:inherit;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+  textarea{min-height:80px;resize:vertical}
+  .sheet-bg{position:fixed;inset:0;background:rgba(20,25,22,.45);display:flex;align-items:flex-end;z-index:20}
+  .sheet{background:var(--card);width:100%;max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+  .sheet h3{margin:0 0 4px;font-size:18px}
+  .sheet .hint{font-size:13px;color:var(--sub);margin:0 0 6px}
+  .done{text-align:center;padding:28px 8px 8px}
+  .done .ok{width:76px;height:76px;border-radius:50%;background:var(--gold-soft);color:var(--gold);font-size:40px;line-height:76px;margin:0 auto 12px}
+  .check{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;font-size:15px}
+  .check input{width:20px;height:20px;margin:0}
+  .qr{position:fixed;inset:0;background:#fff;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .qr img{width:min(80vw,380px);height:auto;image-rendering:pixelated}
+  .qr h2{margin:0 0 4px}
+  .qr p{color:var(--sub);font-size:14px;margin:6px 0 18px}
+  .fab{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+  .fab>div{max-width:488px;margin:0 auto}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;z-index:40;max-width:90%;text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--sub);font-weight:500}
+  .loading{text-align:center;color:var(--sub);padding:60px 0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">載入中…</div></div>
+<div id="layer"></div>
+
+<script>
+(function(){
+  'use strict';
+  var CFG = window.APP_CONFIG || {};
+  var LIFF_URL = 'https://liff.line.me/' + CFG.LIFF_ID;
+  var S = { me:null, events:[], adminClaimable:false, view:'home', current:null };
+  var $app = document.getElementById('app');
+  var $layer = document.getElementById('layer');
+
+  /* ---------- 小工具 ---------- */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  var WD = ['日','一','二','三','四','五','六'];
+  function parts(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/); if(!m) return null;
+    var w=new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).getUTCDay(); return {y:+m[1],mo:+m[2],d:+m[3],h:m[4],mi:m[5],w:WD[w]}; }
+  function fmtWhen(ev){ var a=parts(ev.start); if(!a) return ev.start; var s=a.mo+'/'+a.d+'（'+a.w+'）'+a.h+':'+a.mi;
+    var b=parts(ev.end); if(b) s += (b.y===a.y&&b.mo===a.mo&&b.d===a.d) ? '–'+b.h+':'+b.mi : ' – '+b.mo+'/'+b.d+' '+b.h+':'+b.mi; return s; }
+  function toast(msg, ms){ var t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, ms||2600); }
+  function sheet(html){ $layer.innerHTML='<div class="sheet-bg" data-close="1"><div class="sheet">'+html+'</div></div>'; }
+  function closeLayer(){ $layer.innerHTML=''; }
+  $layer.addEventListener('click', function(e){ if(e.target.getAttribute('data-close')) closeLayer(); });
+
+  /* ---------- 後端 ---------- */
+  function api(action, payload){
+    var body = Object.assign({ action:action, idToken: liff.getIDToken() }, payload||{});
+    return fetch(CFG.GAS_URL, { method:'POST', body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res.ok) return res.data;
+        if(res.error==='TOKEN_EXPIRED' || res.error==='NO_TOKEN'){ liff.logout(); liff.login({ redirectUri: location.href }); }
+        var err = new Error(res.message||'發生錯誤'); err.code=res.error; throw err;
+      });
+  }
+
+  /* ---------- 以本人名義在聊天室發訊息 ---------- */
+  function inChat(){ try{ var t=liff.getContext()&&liff.getContext().type; return ['utou','group','room','square_chat'].indexOf(t)>=0; }catch(e){ return false; } }
+  function postToChat(text){
+    if(!inChat()){ return Promise.resolve(false); }
+    return liff.sendMessages([{ type:'text', text:text }]).then(function(){ return true; })
+      .catch(function(e){ console.warn('sendMessages', e); return false; });
+  }
+  function shareFallback(text){
+    if(!liff.isApiAvailable || !liff.isApiAvailable('shareTargetPicker')) return Promise.resolve(false);
+    return liff.shareTargetPicker([{ type:'text', text:text }]).then(function(r){ return !!r; }).catch(function(){ return false; });
+  }
+  function evLine(ev){ return '《'+ev.title+'》\n🗓 '+fmtWhen(ev)+(ev.place?'\n📍 '+ev.place:''); }
+  function eventLink(ev){ return LIFF_URL+'?event='+encodeURIComponent(ev.eventId); }
+
+  /* ---------- 畫面：首頁 ---------- */
+  function renderHeader(){
+    var m=S.me; return '<header><div class="brand"><small>RIWAY · Gathering</small><b>活動報到小幫手</b></div>'+
+      '<div class="me">'+(m.picture?'<img src="'+esc(m.picture)+'" alt="">':'')+'<span>'+esc(m.name)+(m.isAdmin?'<span class="badge">管理員</span>':'')+'</span></div></header>';
+  }
+  function evCard(ev){
+    var a=parts(ev.start)||{};
+    var chip = ev.myStatus==='已出席' ? '<span class="chip gold">已出席</span>' : ev.myStatus==='已報名' ? '<span class="chip">已報名</span>' : '';
+    if(ev.status==='關閉') chip += '<span class="chip gray">已關閉</span>';
+    return '<div class="card ev" data-ev="'+esc(ev.eventId)+'"><div class="date"><div class="d">'+(a.mo?a.mo+'/'+a.d:'')+'</div><div class="w">週'+(a.w||'')+'</div></div>'+
+      '<div><div class="t">'+esc(ev.title)+chip+'</div><div class="m">'+esc(fmtWhen(ev))+(ev.place?'・'+esc(ev.place):'')+'</div>'+
+      '<div class="c">'+ev.registered+' 人報名 · '+ev.attended+' 人出席</div></div></div>';
+  }
+  function renderHome(){
+    S.view='home'; S.current=null;
+    var h = renderHeader();
+    if(S.adminClaimable) h += '<div class="card"><b>第一次使用</b><p class="meta">系統還沒有管理員。只有上傑本人按這顆按鈕。</p><button class="btn gold" id="claim">設定我為管理員</button></div>';
+    h += '<div class="sec"><h2>近期活動</h2></div>';
+    h += S.events.length ? S.events.map(evCard).join('') : '<div class="card empty">目前沒有開放報名的活動</div>';
+    if(S.me.isAdmin) h += '<div class="fab"><div><button class="btn" id="new">＋ 新增活動</button></div></div>';
+    else h += '<div class="fab"><div><button class="btn ghost" id="scanHome">📷 現場掃碼報到</button></div></div>';
+    $app.innerHTML = h;
+    bind('[data-ev]', function(el){ openEvent(el.getAttribute('data-ev')); });
+    on('#claim', claimAdmin); on('#new', renderCreate); on('#scanHome', function(){ scanAndCheckin(null); });
+  }
+
+  /* ---------- 畫面：活動詳情 ---------- */
+  function openEvent(id){
+    $app.innerHTML='<div class="loading">載入中…</div>';
+    return api('event',{eventId:id}).then(function(ev){ S.current=ev; renderEvent(); })
+      .catch(function(e){ toast(e.message); renderHome(); });
+  }
+  function personChip(p){
+    var tag = p.type==='新朋友' ? '<span class="tag">新朋友</span>' : p.type==='現場' ? '<span class="tag">現場</span>' : '';
+    var x = (!p.attended && (p.isMe||p.byMe||S.me.isAdmin)) ? '<span class="x" data-cancel="'+esc(p.regId)+'" data-name="'+esc(p.name)+'">✕</span>' : '';
+    return '<span class="p'+(p.attended?' in':'')+'">'+(p.attended?'✓ ':'')+esc(p.name)+tag+x+'</span>';
+  }
+  function renderEvent(){
+    S.view='event'; var ev=S.current;
+    var inP = ev.people.filter(function(p){return p.attended;});
+    var waitP = ev.people.filter(function(p){return !p.attended;});
+    var mine = ev.people.filter(function(p){return p.isMe;})[0];
+    var open = ev.status==='開放';
+    var h = '<button class="back" id="back">‹ 返回</button><div class="card"><h1>'+esc(ev.title)+'</h1><div class="meta"><div>🗓 '+esc(fmtWhen(ev))+'</div>'+
+      (ev.place?'<div>📍 '+esc(ev.place)+'</div>':'')+'</div>'+(ev.note?'<div class="note">'+esc(ev.note)+'</div>':'')+
+      '<div class="stats"><div class="stat"><b>'+ev.registered+'</b><span>報名</span></div><div class="stat"><b>'+ev.attended+'</b><span>出席</span></div></div>';
+    if(!open) h += '<p class="meta">這個活動已關閉報名。</p>';
+    else if(!mine) h += '<button class="btn" id="reg">我要報名</button>';
+    else h += '<button class="btn" disabled>'+(mine.attended?'✓ 你已出席':'✓ 你已報名')+'</button>';
+    if(open) h += '<div style="height:10px"></div><button class="btn ghost" id="guest">＋ 代新朋友報名</button>';
+    h += '</div>';
+    h += '<div class="sec"><h2>已出席 '+inP.length+'</h2></div><div class="card">'+(inP.length?'<div class="people">'+inP.map(personChip).join('')+'</div>':'<div class="empty">還沒有人報到</div>')+'</div>';
+    h += '<div class="sec"><h2>已報名・未到 '+waitP.length+'</h2></div><div class="card">'+(waitP.length?'<div class="people">'+waitP.map(personChip).join('')+'</div>':'<div class="empty">—</div>')+'</div>';
+    if(S.me.isAdmin){
+      h += '<div class="sec"><h2>管理員</h2></div><div class="card"><div class="row"><button class="btn gold" id="showQr">顯示報到 QR</button>'+
+        '<button class="btn ghost" id="toggle">'+(open?'關閉報名':'重新開放')+'</button></div>'+
+        '<p class="meta">報到碼：'+esc(ev.code)+'　·　活動開始前 2 小時到結束後 1 小時可報到</p>'+
+        '<table><tr><th>姓名</th><th>推薦人／代報</th><th>出席</th></tr>'+ev.people.map(function(p){
+          return '<tr><td>'+esc(p.name)+(p.type!=='本人'?' <span class="tag">'+esc(p.type)+'</span>':'')+'</td><td>'+esc(p.referrer||'')+(p.type==='新朋友'?'<br><span class="tag">由 '+esc(p.submitter)+' 代報</span>':'')+
+            '</td><td>'+(p.attended?esc((p.attendedAt||'').slice(11)):'—')+'</td></tr>'; }).join('')+'</table></div>';
+    }
+    if(ev.checkinOpen && !(mine&&mine.attended)) h += '<div class="fab"><div><button class="btn gold" id="scan">📷 現場掃碼報到</button></div></div>';
+    $app.innerHTML = h;
+    on('#back', function(){ refresh(); });
+    on('#reg', doRegister); on('#guest', guestForm); on('#scan', function(){ scanAndCheckin(ev.eventId); });
+    on('#showQr', function(){ showQr(ev); }); on('#toggle', function(){ toggleStatus(ev); });
+    bind('[data-cancel]', function(el){ cancelReg(el.getAttribute('data-cancel'), el.getAttribute('data-name')); });
+  }
+
+  /* ---------- 報名 ---------- */
+  function doRegister(){
+    var ev=S.current; var b=document.getElementById('reg'); b.disabled=true; b.textContent='報名中…';
+    api('register',{eventId:ev.eventId}).then(function(r){
+      if(r.already){ toast('你已經報名過了'); return openEvent(ev.eventId); }
+      return postToChat('✋ 我報名了'+evLine(ev)+'\n👉 一起來：'+eventLink(ev)).then(function(sent){
+        toast(sent?'報名成功，已通知群組':'報名成功'); return openEvent(ev.eventId);
+      });
+    }).catch(function(e){ toast(e.message); b.disabled=false; b.textContent='我要報名'; });
+  }
+  function guestForm(){
+    sheet('<h3>代新朋友報名</h3><p class="hint">只需要名字和推薦人，不收電話等個資。</p>'+
+      '<label>新朋友名字</label><input id="gName" maxlength="20" placeholder="例：王小明">'+
+      '<label>推薦人</label><input id="gRef" maxlength="20" value="'+esc(S.me.name)+'">'+
+      '<div style="height:16px"></div><button class="btn" id="gGo">送出報名</button><button class="btn quiet" data-close="1">取消</button>');
+    setTimeout(function(){ var i=document.getElementById('gName'); i&&i.focus(); }, 50);
+    on('#gGo', function(){
+      var ev=S.current, name=document.getElementById('gName').value.trim(), ref=document.getElementById('gRef').value.trim();
+      if(!name){ toast('請填新朋友的名字'); return; }
+      var b=document.getElementById('gGo'); b.disabled=true; b.textContent='送出中…';
+      api('registerGuest',{eventId:ev.eventId,name:name,referrer:ref}).then(function(r){
+        closeLayer();
+        return postToChat('✋ 我幫新朋友「'+r.name+'」報名了'+evLine(ev)+'\n推薦人：'+r.referrer).then(function(sent){
+          toast(sent?'已幫 '+r.name+' 報名，已通知群組':'已幫 '+r.name+' 報名'); return openEvent(ev.eventId);
+        });
+      }).catch(function(e){ toast(e.message); b.disabled=false; b.textContent='送出報名'; });
+    });
+  }
+  function cancelReg(regId, name){
+    sheet('<h3>取消「'+esc(name)+'」的報名？</h3><div style="height:12px"></div><button class="btn" style="background:var(--red)" id="cGo">確定取消</button><button class="btn quiet" data-close="1">先不要</button>');
+    on('#cGo', function(){ api('cancel',{regId:regId}).then(function(){ closeLayer(); toast('已取消'); openEvent(S.current.eventId); })
+      .catch(function(e){ closeLayer(); toast(e.message); }); });
+  }
+
+  /* ---------- 報到 ---------- */
+  function parseCheckin(text){
+    try{ var u=new URL(text); var q=u.searchParams; if(q.get('liff.state')){ q=new URLSearchParams(q.get('liff.state').replace(/^[^?]*\?/,'')); }
+      if(q.get('checkin')&&q.get('code')) return {eventId:q.get('checkin'), code:q.get('code')}; }catch(e){}
+    return null;
+  }
+  function scanAndCheckin(expectId){
+    if(!liff.isApiAvailable || !liff.isApiAvailable('scanCodeV2')){ toast('請用手機 LINE 開啟，或直接用 LINE 相機掃現場 QR Code', 4000); return; }
+    liff.scanCodeV2().then(function(r){
+      var c = parseCheckin(r && r.value);
+      if(!c){ toast('這不是活動報到碼'); return; }
+      if(expectId && c.eventId!==expectId) toast('這是另一場活動的報到碼，幫你切換', 2000);
+      doCheckin(c.eventId, c.code);
+    }).catch(function(e){ if(e&&e.code!=='CANCEL') toast('掃描沒有完成：'+(e.message||'')); });
+  }
+  function doCheckin(eventId, code){
+    $app.innerHTML='<div class="loading">報到中…</div>';
+    api('checkin',{eventId:eventId, code:code}).then(function(r){
+      var ev=r.event; var pending = r.myGuests.filter(function(g){return !g.attended;});
+      var msgBase = '📍 我到了！'+evLine(ev)+'\n已完成現場報到';
+      var finish = function(names){
+        var text = msgBase + (names&&names.length ? '\n同行新朋友：'+names.join('、') : '');
+        var send = r.already && !(names&&names.length) ? Promise.resolve('skip') : postToChat(text);
+        return send.then(function(sent){ renderDone(ev, r, names||[], sent, text); });
+      };
+      if(pending.length){ return askGuests(ev, code, pending).then(finish); }
+      return finish([]);
+    }).catch(function(e){ toast(e.message, 3500); refresh(); });
+  }
+  function askGuests(ev, code, guests){
+    return new Promise(function(resolve){
+      sheet('<h3>你代報名的朋友也到了嗎？</h3><p class="hint">勾選已經到現場的人，一起完成報到。</p>'+
+        guests.map(function(g){ return '<label class="check"><input type="checkbox" value="'+esc(g.regId)+'" checked> '+esc(g.name)+'</label>'; }).join('')+
+        '<div style="height:10px"></div><button class="btn gold" id="gcGo">確認報到</button><button class="btn quiet" id="gcSkip">他們還沒到</button>');
+      on('#gcSkip', function(){ closeLayer(); resolve([]); });
+      on('#gcGo', function(){
+        var ids=[].slice.call($layer.querySelectorAll('input:checked')).map(function(i){return i.value;});
+        if(!ids.length){ closeLayer(); resolve([]); return; }
+        document.getElementById('gcGo').disabled=true;
+        api('checkinGuests',{eventId:ev.eventId, code:code, regIds:ids}).then(function(r){ closeLayer(); resolve(r.names); })
+          .catch(function(e){ closeLayer(); toast(e.message); resolve([]); });
+      });
+    });
+  }
+  function renderDone(ev, r, names, sent, text){
+    var h = '<div class="card done"><div class="ok">✓</div><h1>'+(r.already?'你已經報到過了':'報到成功')+'</h1>'+
+      '<p class="meta">'+esc(ev.title)+'<br>'+esc(fmtWhen(ev))+'</p>'+
+      (names.length?'<p>同行新朋友：'+names.map(esc).join('、')+'</p>':'')+
+      (r.walkIn?'<p class="meta">你沒有事先報名，已幫你登記為現場報到。</p>':'')+
+      (sent===true?'<p class="meta">已在群組通知大家 👋</p>':'')+
+      (sent===false?'<button class="btn ghost" id="share">分享到群組</button><div style="height:10px"></div>':'')+
+      '<button class="btn" id="toEv">查看出席名單</button></div>';
+    $app.innerHTML = renderHeader()+h;
+    on('#toEv', function(){ openEvent(ev.eventId); });
+    on('#share', function(){ shareFallback(text).then(function(ok){ if(ok) toast('已分享'); else toast('這個環境不能分享，回群組點小幫手報到即可自動通知'); }); });
+  }
+
+  /* ---------- 管理員 ---------- */
+  function claimAdmin(){
+    api('claimAdmin').then(function(){ toast('你已成為管理員'); refresh(); }).catch(function(e){ toast(e.message); refresh(); });
+  }
+  function renderCreate(){
+    S.view='create';
+    var d=new Date(Date.now()+8*3600000+86400000); var day=d.toISOString().slice(0,10);
+    $app.innerHTML = '<button class="back" id="back">‹ 返回</button><div class="card"><h1>新增活動</h1>'+
+      '<label>活動名稱 *</label><input id="fTitle" maxlength="40" placeholder="例：週三能量學聚會">'+
+      '<label>開始時間 *</label><input id="fStart" type="datetime-local" value="'+day+'T19:30">'+
+      '<label>結束時間</label><input id="fEnd" type="datetime-local" value="'+day+'T21:30">'+
+      '<label>地點</label><input id="fPlace" maxlength="60" placeholder="例：高雄會館 3F">'+
+      '<label>備註</label><textarea id="fNote" maxlength="300" placeholder="要帶什麼、誰主講…"></textarea>'+
+      '<div style="height:16px"></div><button class="btn" id="fGo">建立活動</button></div>';
+    on('#back', renderHome);
+    on('#fGo', function(){
+      var v=function(id){return document.getElementById(id).value.trim();};
+      var b=document.getElementById('fGo'); b.disabled=true; b.textContent='建立中…';
+      api('createEvent',{event:{title:v('fTitle'),start:v('fStart'),end:v('fEnd'),place:v('fPlace'),note:v('fNote')}})
+        .then(function(ev){ toast('活動已建立'); openEvent(ev.eventId); })
+        .catch(function(e){ toast(e.message); b.disabled=false; b.textContent='建立活動'; });
+    });
+  }
+  function showQr(ev){
+    var url = LIFF_URL+'?checkin='+encodeURIComponent(ev.eventId)+'&code='+encodeURIComponent(ev.code);
+    var q = qrcode(0,'M'); q.addData(url); q.make();
+    $layer.innerHTML = '<div class="qr"><h2>'+esc(ev.title)+'</h2><p>打開群組裡的「活動報到小幫手」→ 現場掃碼報到<br>（也可以直接用 LINE 掃描）</p>'+
+      q.createImgTag(10, 16)+'<p>'+esc(fmtWhen(ev))+'</p><button class="btn ghost" style="max-width:240px" id="qClose">關閉</button></div>';
+    on('#qClose', closeLayer);
+  }
+  function toggleStatus(ev){
+    api('setEventStatus',{eventId:ev.eventId, status: ev.status==='開放'?'關閉':'開放'})
+      .then(function(r){ toast(r.status==='關閉'?'已關閉報名':'已重新開放'); openEvent(ev.eventId); }).catch(function(e){ toast(e.message); });
+  }
+
+  /* ---------- 啟動 ---------- */
+  function on(sel, fn){ var el=document.querySelector(sel); if(el) el.addEventListener('click', fn); }
+  function bind(sel, fn){ [].forEach.call(document.querySelectorAll(sel), function(el){ el.addEventListener('click', function(e){ e.stopPropagation(); fn(el); }); }); }
+  function refresh(){
+    return api('init').then(function(d){ S.me=d.me; S.events=d.events; S.adminClaimable=d.adminClaimable; renderHome(); });
+  }
+  function fail(msg){ $app.innerHTML='<div class="card empty" style="margin-top:40px">'+esc(msg)+'</div>'; }
+
+  if(!window.liff){ fail('請從 LINE 開啟這個頁面'); return; }
+  liff.init({ liffId: CFG.LIFF_ID }).then(function(){
+    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    var q = new URLSearchParams(location.search);
+    return refresh().then(function(){
+      if(q.get('checkin') && q.get('code')) return doCheckin(q.get('checkin'), q.get('code'));
+      if(q.get('event')) return openEvent(q.get('event'));
+    });
+  }).catch(function(e){ console.error(e); fail('啟動失敗：'+(e.message||e)); });
+})();
+</script>
+</body>
+</html>
